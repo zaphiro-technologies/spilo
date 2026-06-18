@@ -19,8 +19,6 @@ rm -fr /etc/cron.??*
 truncate --size 0 /etc/crontab
 
 if [ "$DEMO" != "true" ]; then
-    # Required for wal-e
-    apt-get install -y pv lzop
     # install etcdctl
     ETCDVERSION=3.3.27
     curl -L https://github.com/coreos/etcd/releases/download/v${ETCDVERSION}/etcd-v${ETCDVERSION}-linux-"$(dpkg --print-architecture)".tar.gz \
@@ -39,6 +37,10 @@ for t in deb deb-src; do
     echo "$t http://apt.postgresql.org/pub/repos/apt/ ${DISTRIB_CODENAME}-pgdg main" >> /etc/apt/sources.list.d/pgdg.list
 done
 curl -s -o - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/apt.postgresql.org.gpg
+
+# add TimescaleDB repository
+echo "deb [signed-by=/etc/apt/keyrings/timescale_timescaledb-archive-keyring.gpg] https://packagecloud.io/timescale/timescaledb/ubuntu/ ${DISTRIB_CODENAME} main" | tee /etc/apt/sources.list.d/timescaledb.list
+curl -fsSL https://packagecloud.io/timescale/timescaledb/gpgkey | gpg --dearmor | tee /etc/apt/keyrings/timescale_timescaledb-archive-keyring.gpg > /dev/null
 
 # Clean up
 apt-get purge -y libcap2-bin

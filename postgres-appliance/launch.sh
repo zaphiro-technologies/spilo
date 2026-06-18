@@ -34,8 +34,16 @@ fi
 ## Ensure all logfiles exist, most appliances will have
 ## a foreign data wrapper pointing to these files
 for i in $(seq 0 7); do
-    if [ ! -f "${PGLOG}/postgresql-$i.csv" ]; then
-        touch "${PGLOG}/postgresql-$i.csv"
+    if [ "$LOG_SHIP_HOURLY" != "true" ]; then
+        if [ ! -f "${PGLOG}/postgresql-${i}.csv" ]; then
+            touch "${PGLOG}/postgresql-${i}.csv"
+        fi
+    else
+        for h in $(seq -w 0 23); do
+            if [ ! -f "${PGLOG}/postgresql-${i}-${h}.csv" ]; then
+                touch "${PGLOG}/postgresql-${i}-${h}.csv"
+            fi
+        done
     fi
 done
 chown -R postgres: "$PGROOT" "$RW_DIR/certs"
@@ -43,10 +51,11 @@ chmod -R go-w "$PGROOT"
 chmod 01777 "$RW_DIR/tmp"
 chmod 0700 "$PGDATA"
 
+WALG_ENV_DIR="${WALG_ENV_DIR:-$WALE_ENV_DIR}"
 if [ "$DEMO" = "true" ]; then
     python3 /scripts/configure_spilo.py patroni pgqd certificate pam-oauth2
 elif python3 /scripts/configure_spilo.py all; then
-    CMD="/scripts/patroni_wait.sh -t 3600 -- envdir $WALE_ENV_DIR /scripts/postgres_backup.sh $PGDATA"
+    CMD="/scripts/patroni_wait.sh -t 3600 -- envdir $WALG_ENV_DIR /scripts/postgres_backup.sh $PGDATA"
     if [ "$(id -u)" = "0" ]; then
         su postgres -c "PATH=$PATH $CMD" &
     else
